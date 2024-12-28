@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot LLM App</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        /* Base Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #2d2f3a, #1c1d24);
+            color: #e3e4e8;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #6a5bff;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+
+        /* Chat Container */
+        .chat-container {
+            max-width: 1200px;
+            width: 100%;
+            padding: 25px;
+            border-radius: 16px;
+            background: #1b1e28;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* Input Area */
+        .input-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            gap: 15px;
+        }
+
+        .input-area textarea {
+            width: 100%;
+            max-width: 1000px;
+            padding: 15px;
+            font-size: 16px;
+            border-radius: 12px;
+            border: none;
+            background-color: #2a2d39;
+            color: #f0f0f0;
+            resize: none;
+            outline: none;
+            transition: box-shadow 0.3s;
+        }
+
+        .input-area textarea:focus {
+            box-shadow: 0 0 10px #6a5bff;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .input-area button {
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            background-color: #6a5bff;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-area button i {
+            margin-right: 5px;
+        }
+
+        .input-area button:hover {
+            background-color: #5a4de0;
+            transform: scale(1.05);
+        }
+
+        /* Response Area */
+        .response {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            border-radius: 12px;
+            background-color: #6a5bff;
+            scrollbar-width: thin;
+            scrollbar-color: #6a5bff #1c1d24;
+        }
+
+        .response::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .response::-webkit-scrollbar-thumb {
+            background-color: #6a5bff;
+            border-radius: 10px;
+        }
+
+        .response-item, .conclusion-item {
+            padding: 20px;
+            background-color: #2a2d39;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .response-item:hover, .conclusion-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Loading Indicator */
+        .loading {
+            color: #f1c40f;
+            display: none;
+            font-size: 1.2em;
+        }
+
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #2a2d39 url('path/to/shady-image.jpg') center/cover;
+            color: #6a5bff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5em;
+            font-weight: bold;
+            z-index: 1000;
+            opacity: 1;
+            transition: opacity 1s, transform 1s;
+        }
+
+        .start-button {
+            margin-top: 20px;
+            padding: 12px 25px; /* Same padding as the other buttons */
+            font-size: 18px; /* Slightly bigger text */
+            font-weight: bold;
+            color: #fff;
+            background-color: #6a5bff; /* Same background color */
+            border: none;
+            border-radius: 8px; /* Matches the rounded edges */
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s; /* Smooth transition like the other buttons */
+            display: flex;
+            align-items: center;
+        }
+        
+        .start-button:hover {
+            background-color: #5a4de0; /* Darker color on hover */
+            transform: scale(1.05); /* Adds scaling effect */
+        }
+        
+
+        .slide-out {
+            opacity: 0;
+            transform: translateX(-100%);
+        }
+    </style>
+</head>
+<body>
+    
+    <header>Huggingface + Gemini + OpenAI</header>
+    
+    <div id="welcomeScreen" class="welcome-screen">
+        <h1>Welcome to Chatbot LLM App</h1>
+        <button class="start-button" id="startButton">Start</button>
+    </div>
+    
+    <div class="chat-container">
+        <div class="input-area">
+            <textarea id="queryInput" rows="4" placeholder="Type your question here..."></textarea>
+            <div class="button-container">
+                <button id="searchButton"><i class="fas fa-paper-plane"></i> Ask</button>
+                <button class="reset-button" id="resetButton"><i class="fas fa-undo"></i> Reset</button>
+                <button id="uploadButton"><i class="fas fa-upload"></i> Upload</button>
+            </div>
+        </div>
+        
+        <div class="loading" id="loadingIndicator">Loading...</div>
+
+        <div class="response" id="responseContainer">
+            <div class="response-item" id="chatbot1">
+                <span>Answer 01</span>
+            </div>
+            <div class="conclusion-item" id="conclusion1">Conclusion 1</div>
+            <div class="response-item" id="chatbot2">
+                <span>Answer 02</span>
+            </div>
+            <div class="conclusion-item" id="conclusion2">Conclusion 2</div>
+            <div class="response-item" id="chatbot3">
+                <span>Answer 03</span>
+            </div>
+            <div class="conclusion-item" id="conclusion3">Conclusion 3</div>
+            <div class="response-item" id="chatbot4">
+                <span>Answer 04</span>
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        document.getElementById('startButton').addEventListener('click', () => {
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            welcomeScreen.classList.add('slide-out');
+            setTimeout(() => {
+                welcomeScreen.style.display = 'none';
+            }, 1000); // Matches the transition duration for smooth exit
+        });
+
+        document.getElementById('searchButton').addEventListener('click', async () => {
+            const queryInput = document.getElementById('queryInput').value;
+
+            if (!queryInput.trim()) {
+                alert('Please enter a question!');
+                return;
+            }
+
+            document.getElementById('loadingIndicator').style.display = 'block';
+
+            try {
+                const response = await fetch('http://localhost:8000/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: queryInput }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                displayResponse(data);
+            } catch (error) {
+                document.getElementById('responseContainer').innerHTML = `<div class="response-item error">Error: ${error.message}</div>`;
+            } finally {
+                document.getElementById('loadingIndicator').style.display = 'none';
+            }
+        });
+
+        function displayResponse(data) {
+            document.getElementById('responseContainer').innerHTML = `
+                <div class="response-item" id="chatbot1">${data['chatbot1 answer']}</div>
+                <div class="conclusion-item" id="conclusion1">
+                    <span class="status-icon ${data['conclusion1 correct'] ? 'correct-icon' : 'incorrect-icon'}"></span>
+                    ${data['conclusion 1']}
+                </div>
+                <div class="response-item" id="chatbot2">${data['chatbot2 answer']}</div>
+                <div class="conclusion-item" id="conclusion2">
+                    <span class="status-icon ${data['conclusion2 correct'] ? 'correct-icon' : 'incorrect-icon'}"></span>
+                    ${data['conclusion 2']}
+                </div>
+                <div class="response-item" id="chatbot3">${data['chatbot3 answer']}</div>
+                <div class="conclusion-item" id="conclusion3">
+                    <span class="status-icon ${data['conclusion3 correct'] ? 'correct-icon' : 'incorrect-icon'}"></span>
+                    ${data['conclusion 3']}
+                </div>
+                <div class="response-item" id="chatbot4">${data['chatbot4 answer']}</div>
+            `;
+        }
+
+        document.getElementById('resetButton').addEventListener('click', () => {
+            document.getElementById('responseContainer').innerHTML = '';
+            document.getElementById('queryInput').value = '';
+        });
+
+        // Handle the upload button click to trigger file selection
+        document.getElementById('uploadButton').addEventListener('click', () => {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.pdf, .txt';  // Specify acceptable file types
+            fileInput.onchange = async (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    await uploadFile(file);
+                }
+            };
+            fileInput.click();
+        });
+
+        // Function to upload the selected file
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('http://localhost:8000/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error('File upload failed');
+                }
+
+                const data = await response.json();
+                alert('File uploaded successfully!');
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
